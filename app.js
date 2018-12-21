@@ -1,7 +1,6 @@
 const { Builder, By, Key, until } = require('selenium-webdriver');
-// const { Options } = require('selenium-webdriver/chrome');
-
-// .setChromeOptions(options)
+const cheerio = require('cheerio')
+const Goods = require('./models/Goods')
 
 let currentPageNum = 1;
 let maxPageNum = 10;
@@ -28,6 +27,9 @@ async function getData() {
       let cover_img = await el.findElement(By.css('.good-img-wrap img')).getAttribute('src')
       let name = await el.findElement(By.css('.good-name .content')).getText()
       let sale_price = await el.findElement(By.css('.good-price .discount-price')).getText()
+
+      sale_price && (sale_price = sale_price.substr(1))
+
       let goodsInfo = {
         cover_img,
         name,
@@ -36,35 +38,48 @@ async function getData() {
         cate_id: 1,
         sub_cate_id: 5
       }
-      let colorInfo = {}
-      let sizeInfo = {}
+      let colorInfos = []
+      let sizeInfos = []
       let imgInfo = {
         small_imgs: [],
         big_imgs: []
       }
 
       await el.findElement(By.tagName('a')).click()
+      let allHandles = await driver.getAllWindowHandles()
+      await driver.switchTo().window(allHandles[1])
+
       while (flag) {
-        let allHandles = await driver.getAllWindowHandles()
-        await driver.switchTo().window(allHandles[1])
+
+        let goodsInfoHTML = await driver.findElement(By.tagName('html')).getAttribute('innerHTML')
+        const $ = cheerio.load(goodsInfoHTML)
+
+        let discount_info = $('#actDivs').text()
+        let content = $('.tab-nav .tab-content > .content').html()
+        let stock = $('#stockId').text()
+        let sale_count = $('#salesNum').text()
+        let description = $('.goods-msg > .detail').text()
 
         // 基本信息获取
-        let discount_info = await driver.findElement(By.id('actDivs')).getText()
-        let content = await driver.findElement(By.css('.tab-nav .tab-content > .content')).getAttribute('innerHTML')
-        let stock = await driver.findElement(By.id('stockId')).getText()
-        let sale_count = await driver.findElement(By.id('salesNum')).getText()
-        
+        // let discount_info = await driver.findElement(By.id('actDivs')).getText()
+        // let content = await driver.findElement(By.css('.tab-nav .tab-content > .content')).getAttribute('innerHTML')
+        // let stock = await driver.findElement(By.id('stockId')).getText()
+        // let sale_count = await driver.findElement(By.id('salesNum')).getText()
+
         // 基本信息绑定
+        description && (goodsInfo.description = description)
         discount_info && (goodsInfo.discount_info = discount_info)
         content && (goodsInfo.content = content)
         stock && (stock = /\d+/.exec(stock)[0]) && (goodsInfo.stock = stock)
         sale_count && (sale_count = /\d+/.exec(sale_count)[0]) && (goodsInfo.sale_count = sale_count)
 
         // 图片获取
-        let imgs = await driver.findElements(By.css('.goods-magnifier .left .list-img img'))
-        console.log(imgs.length)
-        imgs.forEach(async img => {
-          let smallImg = await img.getAttribute('src')
+        // let imgs = await driver.findElements(By.css('.goods-magnifier .left .list-img img'))
+        // imgs.forEach(async img => {
+        let imgs = $('.goods-magnifier .left .list-img img')
+        imgs.each((index, img) => {
+          // let smallImg = await img.getAttribute('src')
+          let smallImg = $(img).attr('src')
           // 图片绑定
           if (imgInfo.small_imgs.indexOf(smallImg) === -1) {
             imgInfo.small_imgs.push(smallImg)
@@ -72,9 +87,27 @@ async function getData() {
           }
         })
 
+        // 颜色获取
+
+        let fourText = $('.goods-msg>div').eq(3).text()
+        let fiveText = $('.goods-msg>div').eq(4).text()
+
+        if (fourText.includes('颜色')) {
+          $('.goods-msg>div').eq(3).find('.dd>a').each((i, item) => {
+            colorInfos.push($(item).text().trim())
+          })
+        }
+
+        if (fiveText.includes('尺码')) {
+          $('.goods-msg>div').eq(4).find('.dd>a').each((i, item) => {
+            sizeInfos.push($(item).text().trim())
+          })
+        }
+
         // 校验数据完整
         if (
-          'discount_info' in goodsInfo
+          'description' in goodsInfo
+          && 'discount_info' in goodsInfo
           && 'content' in goodsInfo
           && 'stock' in goodsInfo
           && 'sale_count' in goodsInfo
@@ -83,10 +116,19 @@ async function getData() {
         }
 
       }
-      console.log(goodsInfo)
-      console.log(imgInfo)
+      // console.log(goodsInfo)
+      // console.log(imgInfo)
+      // console.log(colorInfos)
+      // console.log(sizeInfos)
+
+      let result = await Goods.add(goodsInfo)
+      console.log(result)
+
+      await driver.close()
+      await driver.switchTo().window(allHandles[0])
+
     } catch (err) {
-      console.log('这是catch2')
+      // console.log(err.message)
     }
   }
 

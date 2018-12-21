@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/TianchengLee/node-shop-spider#readme",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
     "mysql": "^2.16.0",
     "mysql2": "^1.6.4",
     "selenium-webdriver": "^4.0.0-alpha.1",

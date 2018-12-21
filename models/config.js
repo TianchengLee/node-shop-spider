@@ -1,6 +1,6 @@
 module.exports = {
   timestamps: true,
-  createdAt: false,
-  updatedAt: 'utime',
+  createdAt: 'ctime',
+  updatedAt: false,
   freezeTableName: true,
 }
