@@ -1,0 +1,26 @@
+{
+  "name": "node-shop-spider",
+  "version": "1.0.0",
+  "description": "node开发电商数据爬虫",
+  "main": "duanzi.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TianchengLee/node-shop-spider.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TianchengLee/node-shop-spider/issues"
+  },
+  "homepage": "https://github.com/TianchengLee/node-shop-spider#readme",
+  "dependencies": {
+    "mysql": "^2.16.0",
+    "mysql2": "^1.6.4",
+    "selenium-webdriver": "^4.0.0-alpha.1",
+    "sequelize": "^4.42.0"
+  }
+}
