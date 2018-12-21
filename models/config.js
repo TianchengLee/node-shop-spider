@@ -1,6 +1,14 @@
 module.exports = {
-  timestamps: true,
-  createdAt: 'ctime',
-  updatedAt: false,
-  freezeTableName: true,
+  needCtime: {
+    timestamps: true,
+    createdAt: 'ctime',
+    updatedAt: false,
+    freezeTableName: true,
+  },
+  notNeedCtime: {
+    timestamps: false,
+    createdAt: false,
+    updatedAt: false,
+    freezeTableName: true,
+  }
 }

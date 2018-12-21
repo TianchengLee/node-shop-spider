@@ -1,6 +1,7 @@
 const { Builder, By, Key, until } = require('selenium-webdriver');
 const cheerio = require('cheerio')
 const Goods = require('./models/Goods')
+const GoodsImg = require('./models/GoodsImg')
 
 let currentPageNum = 1;
 let maxPageNum = 10;
@@ -121,8 +122,10 @@ async function getData() {
       // console.log(colorInfos)
       // console.log(sizeInfos)
 
-      let result = await Goods.add(goodsInfo)
-      console.log(result)
+      let goodsResult = await Goods.add(goodsInfo)
+      let gid = goodsResult.dataValues.id
+
+      await GoodsImg.add(gid, imgInfo)
 
       await driver.close()
       await driver.switchTo().window(allHandles[0])

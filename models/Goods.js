@@ -14,7 +14,7 @@ let Goods = sequelize.define('goods', {
   sale_count: Sequelize.INTEGER,
   cate_id: Sequelize.INTEGER,
   sub_cate_id: Sequelize.INTEGER
-}, config)
+}, config.needCtime)
 
 Goods.add = function (goodsInfo) {
   return new Promise((resolve, reject) => {
