@@ -3,6 +3,7 @@ const cheerio = require('cheerio')
 const Goods = require('./models/Goods')
 const GoodsImg = require('./models/GoodsImg')
 const GoodsSize = require('./models/GoodsSize')
+const GoodsColor = require('./models/GoodsColor')
 
 let currentPageNum = 1;
 let maxPageNum = 10;
@@ -24,7 +25,7 @@ async function getData() {
   let results = []
   for (let i = 0; i < els.length; i++) {
     try {
-      let flag = true
+      let hasException = true
       let el = els[i]
       let cover_img = await el.findElement(By.css('.good-img-wrap img')).getAttribute('src')
       let name = await el.findElement(By.css('.good-name .content')).getText()
@@ -51,10 +52,16 @@ async function getData() {
       let allHandles = await driver.getAllWindowHandles()
       await driver.switchTo().window(allHandles[1])
 
-      while (flag) {
+      while (hasException) {
 
         let goodsInfoHTML = await driver.findElement(By.tagName('html')).getAttribute('innerHTML')
         const $ = cheerio.load(goodsInfoHTML)
+        if (!$('body').text().trim()) {
+          hasException = true
+          await driver.close()
+          await driver.switchTo().window(allHandles[0])
+          break
+        }
 
         let discount_info = $('#actDivs').text()
         let content = $('.tab-nav .tab-content > .content').html()
@@ -114,9 +121,9 @@ async function getData() {
           && 'content' in goodsInfo
           && 'stock' in goodsInfo
           && 'sale_count' in goodsInfo
-          && imgInfo.small_imgs.length === imgs.length) {
-          flag = false
-        }
+          && imgInfo.small_imgs.length === imgs.length
+        ) hasException = false
+
 
       }
       // console.log(goodsInfo)
@@ -124,21 +131,26 @@ async function getData() {
       // console.log(colorInfos)
       // console.log(sizeInfos)
 
-      // 插入商品主表
-      let goodsResult = await Goods.add(goodsInfo)
-      let gid = goodsResult.dataValues.id
+      if (!hasException) {
+        // 插入商品主表
+        let goodsResult = await Goods.add(goodsInfo)
+        let gid = goodsResult.dataValues.id
 
-      // 插入商品图片表
-      await GoodsImg.add(gid, imgInfo)
+        // 插入商品图片表
+        await GoodsImg.add(gid, imgInfo)
 
-      // 插入商品尺码表
-      await GoodsSize.add(gid, sizeInfos)
+        // 插入商品尺码表
+        await GoodsSize.add(gid, sizeInfos)
 
-      await driver.close()
-      await driver.switchTo().window(allHandles[0])
+        // 插入商品颜色表
+        await GoodsColor.add(gid, colorInfos)
+
+        await driver.close()
+        await driver.switchTo().window(allHandles[0])
+      }
 
     } catch (err) {
-      // console.log(err.message)
+      console.log(err.message)
     }
   }
 
