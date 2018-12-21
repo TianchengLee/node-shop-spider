@@ -22,7 +22,6 @@ async function getData() {
 
   console.log(`正在获取第${currentPageNum}页的数据`)
   let els = await driver.findElements(By.css('#listComm > .item'))
-  let results = []
   for (let i = 0; i < els.length; i++) {
     try {
       let hasException = true
@@ -132,6 +131,7 @@ async function getData() {
       // console.log(sizeInfos)
 
       if (!hasException) {
+
         // 插入商品主表
         let goodsResult = await Goods.add(goodsInfo)
         let gid = goodsResult.dataValues.id
@@ -147,6 +147,7 @@ async function getData() {
 
         await driver.close()
         await driver.switchTo().window(allHandles[0])
+        
       }
 
     } catch (err) {
