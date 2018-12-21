@@ -18,7 +18,9 @@ GoodsImg.add = function (gid, imgInfo) {
       let big_img = big_imgs[i]
       this.findOrCreate({
         where: {
-          small_img
+          small_img,
+          big_img,
+          gid
         },
         defaults: {
           small_img,

@@ -2,6 +2,7 @@ const { Builder, By, Key, until } = require('selenium-webdriver');
 const cheerio = require('cheerio')
 const Goods = require('./models/Goods')
 const GoodsImg = require('./models/GoodsImg')
+const GoodsSize = require('./models/GoodsSize')
 
 let currentPageNum = 1;
 let maxPageNum = 10;
@@ -99,6 +100,7 @@ async function getData() {
           })
         }
 
+        // 尺码获取
         if (fiveText.includes('尺码')) {
           $('.goods-msg>div').eq(4).find('.dd>a').each((i, item) => {
             sizeInfos.push($(item).text().trim())
@@ -122,10 +124,15 @@ async function getData() {
       // console.log(colorInfos)
       // console.log(sizeInfos)
 
+      // 插入商品主表
       let goodsResult = await Goods.add(goodsInfo)
       let gid = goodsResult.dataValues.id
 
+      // 插入商品图片表
       await GoodsImg.add(gid, imgInfo)
+
+      // 插入商品尺码表
+      await GoodsSize.add(gid, sizeInfos)
 
       await driver.close()
       await driver.switchTo().window(allHandles[0])

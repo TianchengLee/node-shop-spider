@@ -20,7 +20,10 @@ Goods.add = function (goodsInfo) {
   return new Promise((resolve, reject) => {
     this.findOrCreate({
       where: {
-        name: goodsInfo.name
+        name: goodsInfo.name,
+        description: goodsInfo.description,
+        cover_img: goodsInfo.cover_img,
+        discount_info: goodsInfo.discount_info
       },
       defaults: goodsInfo
     })
