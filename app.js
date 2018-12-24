@@ -4,23 +4,72 @@ const Goods = require('./models/Goods')
 const GoodsImg = require('./models/GoodsImg')
 const GoodsSize = require('./models/GoodsSize')
 const GoodsColor = require('./models/GoodsColor')
+const GoodsCate = require('./models/GoodsCate')
 
-let currentPageNum = 1;
-let maxPageNum = 10;
-const url = 'https://www.purcotton.com/mall/CommodityList/toCommodityListMgr.ihtml?oprtCatNo=001006'
+// let currentPageNum = 1;
+// let maxPageNum = 10;
+const baseUrl = 'https://www.purcotton.com/'
+
+// 所有分类信息
+let cateInfos = []
+
 let driver = new Builder().forBrowser('chrome').build();
 
 start()
 
 async function start() {
-  await driver.get(url);
-  // console.log(await driver.getAllWindowHandles())
-  getData()
+  await driver.get(baseUrl);
+  await getCateData()
+  for (let i = 0; i < cateInfos.length; i++) {
+    let cateInfo = cateInfos[i]
+    for (let j = 0; j < cateInfo.children.length; j++) {
+      let secondCateInfo = cateInfo.children[j]
+      await getGoodsData(cateInfo.id, secondCateInfo)
+    }
+  }
 }
 
-async function getData() {
+async function getCateData() {
+  // 加载首页html
+  let homeHtml = await driver.findElement(By.tagName('html')).getAttribute('innerHTML')
+  let $ = cheerio.load(homeHtml)
+  // 获取一级分类信息
+  let firstCateLis = $('.first-menu-wrap > li').slice(2, 6)
+  let firstCateLinks = firstCateLis.children('a')
+  for (let i = 0; i < firstCateLinks.length; i++) {
+    let item = firstCateLinks[i]
+    let name = $(item).text()
+    // 插入一级分类信息
+    let result = await GoodsCate.add({ name, p_cate_id: null })
+    let firstCateInfo = result.dataValues
+    firstCateInfo.children = []
+    // 存储一级分类信息
+    cateInfos.push(firstCateInfo)
+  }
 
-  console.log(`正在获取第${currentPageNum}页的数据`)
+  // 获取二级分类信息
+  let secondCateDivs = firstCateLis.find('.second-menu')
+  for (let i = 0; i < secondCateDivs.length; i++) {
+    let cateInfo = cateInfos[i]
+    let secondCateDiv = secondCateDivs[i]
+    let secondCateLinks = $(secondCateDiv).children('a')
+    for (let j = 0; j < secondCateLinks.length; j++) {
+      let link = secondCateLinks[j]
+      let name = $(link).text()
+      let p_cate_id = cateInfo.id
+      // 插入二级分类信息
+      let result = await GoodsCate.add({ name, p_cate_id })
+      let secondCateInfo = result.dataValues
+      secondCateInfo.url = $(link).attr('href')
+      // 存储二级分类信息
+      cateInfo.children.push(secondCateInfo)
+    }
+  }
+}
+
+async function getGoodsData(cate_id, cateInfo) {
+  await driver.get(cateInfo.url)
+  // console.log(`正在获取第${currentPageNum}页的数据`)
   let els = await driver.findElements(By.css('#listComm > .item'))
   for (let i = 0; i < els.length; i++) {
     try {
@@ -37,8 +86,8 @@ async function getData() {
         name,
         sale_price,
         price: sale_price,
-        cate_id: 1,
-        sub_cate_id: 5
+        cate_id,
+        sub_cate_id: cateInfo.id
       }
       let colorInfos = []
       let sizeInfos = []
@@ -96,7 +145,6 @@ async function getData() {
         })
 
         // 颜色获取
-
         let fourText = $('.goods-msg>div').eq(3).text()
         let fiveText = $('.goods-msg>div').eq(4).text()
 
@@ -147,7 +195,7 @@ async function getData() {
 
         await driver.close()
         await driver.switchTo().window(allHandles[0])
-        
+
       }
 
     } catch (err) {
